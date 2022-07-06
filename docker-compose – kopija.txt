@@ -1,0 +1,238 @@
+version: '3'
+
+services:
+
+    rabbitmq:
+        container_name: rabbitmq
+        hostname: rabbitmq
+        image: rabbitmq:3.9-management
+        ports:
+            - 5672:5672
+            - 15672:15672
+
+    user-service-db:
+        container_name: user-service-db
+        hostname: user-service-db
+        image: mysql:5.7
+        volumes:
+            - mysql_user:/var/lib/mysql
+        environment:
+             MYSQL_ROOT_HOST: '%'
+             MYSQL_ROOT_PASSWORD: root
+             MYSQL_DATABASE: dbusers
+             MYSQL_USER: root
+             MYSQL_PASSWORD: root
+
+       
+
+    pet-center-management-service-db:
+        container_name: pet-center-management-service-db
+        hostname: pet-center-management-service-db
+        image: mysql:5.7
+        volumes:
+            - mysql_center:/var/lib/mysql
+        environment:
+             MYSQL_ROOT_HOST: '%'
+             MYSQL_ROOT_PASSWORD: root
+             MYSQL_DATABASE: db-pet-center-management
+             MYSQL_USER: root
+             MYSQL_PASSWORD: root
+
+
+    report-pet-service-db:
+        container_name: report-pet-service-db
+        hostname: report-pet-service-db
+        image: mysql:5.7
+        volumes:
+            - mysql_report:/var/lib/mysql
+        environment:
+             MYSQL_ROOT_HOST: '%'
+             MYSQL_ROOT_PASSWORD: root
+             MYSQL_DATABASE: petreportdb
+             MYSQL_USER: root
+             MYSQL_PASSWORD: root
+
+    reservation-service-db:
+        container_name: reservation-service-db
+        hostname: reservation-service-db
+        image: mysql:5.7
+        volumes:
+            - mysql_reservation:/var/lib/mysql
+        environment:
+             MYSQL_ROOT_HOST: '%'
+             MYSQL_ROOT_PASSWORD: root
+             MYSQL_DATABASE: reservation
+             MYSQL_USER: root
+             MYSQL_PASSWORD: root
+
+    desired-pet-service-db:
+        container_name: desired-pet-service-db
+        hostname: desired-pet-service-db
+        image: mysql:5.7
+        volumes:
+            - mysql_desired:/var/lib/mysql
+        environment:
+             MYSQL_ROOT_HOST: '%'
+             MYSQL_ROOT_PASSWORD: root
+             MYSQL_DATABASE: desiredpet
+             MYSQL_USER: root
+             MYSQL_PASSWORD: root
+
+    config-server:
+        container_name: config-server
+        hostname: config-service
+        build:
+            context: ./ConfigServer/
+            dockerfile: Dockerfile
+        image: config-server:latest
+        restart: on-failure
+        expose:
+            - 8888
+        ports:
+            - 8888:8888
+
+    eureka-server:
+        container_name: eureka-server
+        hostname: discovery-server
+        build:
+            context: ./EurekaServer/
+            dockerfile: Dockerfile
+        image: eureka-server:latest
+        restart: on-failure
+        expose:
+            - 8761
+        ports:
+            - 8761:8761
+
+
+    pet-center-management-service:
+        container_name: pet-center-management-service
+        build:
+            context: ./PetCenterManagementService/
+            dockerfile: Dockerfile
+        image: pet-center-management-service:latest
+        restart: on-failure
+        environment:
+            - CONFIG_SERVER_URL=http://config-service:8888
+            - PET_CENTER_DB_URL=jdbc:mysql://pet-center-management-service-db:3306/db-pet-center-management?allowPublicKeyRetrieval=true&useSSL=false
+            - EUREKA_SERVER_URL=http://discovery-server:8761/eureka
+            - SPRING_RABBITMQ_HOST=rabbitmq
+        expose:
+            - 8081
+        ports:
+            - 8081:8081
+        depends_on:
+            - pet-center-management-service-db
+            - config-server
+            - eureka-server
+            - rabbitmq
+
+    user-service:
+        container_name: user-service
+        build:
+            context: ./UserService/
+            dockerfile: Dockerfile
+        image: user-service:latest
+        restart: on-failure
+        environment:
+            - CONFIG_SERVER_URL=http://config-service:8888
+            - USERS_DB_URL=jdbc:mysql://user-service-db:3306/dbusers?allowPublicKeyRetrieval=true&useSSL=false
+            - EUREKA_SERVER_URL=http://discovery-server:8761/eureka
+            - SPRING_RABBITMQ_HOST=rabbitmq
+        expose:
+            - 8084
+        ports:
+            - 8084:8084
+        depends_on:
+            - user-service-db
+            - config-server
+            - eureka-server
+
+    report-pet-service:
+        container_name: report-pet-service
+        build:
+            context: ./ReportPetService/
+            dockerfile: Dockerfile
+        image: report-pet-service:latest
+        restart: on-failure
+        environment:
+            - CONFIG_SERVER_URL=http://config-service:8888
+            - PET_REPORT_DB_URL=jdbc:mysql://report-pet-service-db:3306/petreportdb?allowPublicKeyRetrieval=true&useSSL=false
+            - EUREKA_SERVER_URL=http://discovery-server:8761/eureka
+            - SPRING_RABBITMQ_HOST=rabbitmq
+        expose:
+            - 8083
+        ports:
+            - 8083:8083
+        depends_on:
+            - rabbitmq
+            - report-pet-service-db
+            - user-service
+            - config-server
+            - eureka-server
+
+    reservation-service:
+        container_name: reservation-service
+        build:
+            context: ./ReservationService/
+            dockerfile: Dockerfile
+        image: reservation-service:latest
+        restart: on-failure
+        environment:
+            - CONFIG_SERVER_URL=http://config-service:8888
+            - RESERVATION_DB_URL=jdbc:mysql://reservation-service-db:3306/reservation?allowPublicKeyRetrieval=true&useSSL=false
+            - EUREKA_SERVER_URL=http://discovery-server:8761/eureka
+            - SPRING_RABBITMQ_HOST=rabbitmq
+        expose:
+            - 8082
+        ports:
+            - 8082:8082
+        depends_on:
+            - reservation-service-db
+            - config-server
+            - eureka-server
+
+    desired-pet-service:
+        container_name: desired-pet-service
+        build:
+            context: ./DesiredPetService/
+            dockerfile: Dockerfile
+        image: desired-pet-service:latest
+        restart: on-failure
+        environment:
+            - CONFIG_SERVER_URL=http://config-service:8888
+            - DESIRED_DB_URL=jdbc:mysql://desired-pet-service-db:3306/desiredpet?allowPublicKeyRetrieval=true&useSSL=false
+            - EUREKA_SERVER_URL=http://discovery-server:8761/eureka
+            - SPRING_RABBITMQ_HOST=rabbitmq
+        expose:
+            - 8086
+        ports:
+            - 8086:8086
+        depends_on:
+            - desired-pet-service-db
+            - config-server
+            - eureka-server
+
+    api-gateway:
+        container_name: api-gateway
+        build:
+            context: ./apigateway/
+            dockerfile: Dockerfile
+        image: api-gateway:latest
+        restart: on-failure
+        environment:
+            - EUREKA_SERVER_URL=http://discovery-server:8761/eureka
+        expose:
+            - 8090
+        ports:
+            - 8090:8090
+        depends_on:
+            - eureka-server
+            - config-server
+
+volumes:
+    mysql_user:
+    mysql_center:
+    mysql_report:
+    mysql_desired:
+    mysql_reservation:
