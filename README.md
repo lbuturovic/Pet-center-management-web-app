@@ -2,9 +2,9 @@
 Projekat iz predmeta Praktikum - Napredne web tehnologije:
 
 ## Članovi tima:
-1.	*Beglerović Vildana*
-2.	*Buturović Lejla*
-3.	*Beglerović Vedad*
+*	*Beglerović Vildana*
+*	*Buturović Lejla*
+*	*Beglerović Vedad*
 
 ## Opis:
 Aplikacija je namjenjena za vođenje evidencije o kućnim ljubimcima. Olakšava upravljanje kućnim ljubimacima
