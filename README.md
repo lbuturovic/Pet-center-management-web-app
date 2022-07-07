@@ -1,4 +1,4 @@
-# PNWT-Pet-center
+# Pet center management web application
 Projekat iz predmeta Praktikum - Napredne web tehnologije:
 
 ## Članovi tima:
